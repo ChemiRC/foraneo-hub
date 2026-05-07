@@ -7,7 +7,7 @@ import {
   fetchZones,
   fetchGeofenceAlerts,
   voteKarma,
-} from "../mockApi";
+} from "../services/mockApi";
 
 // ── Corrige el ícono por defecto roto de Leaflet con Vite ─────
 delete L.Icon.Default.prototype._getIconUrl;
