@@ -2,86 +2,192 @@ import { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { fetchAllPOIs, voteKarma } from '../services/mockApi';
 
+// ── Constants ─────────────────────────────────────────────────
+const TIER_CONFIG = {
+  certified: { label: 'Certificado', color: '#10B981', bg: '#F0FDF4', text: '#065F46', border: '#A7F3D0' },
+  acceptable: { label: 'Aceptable', color: '#F59E0B', bg: '#FFFBEB', text: '#92400E', border: '#FDE68A' },
+  review: { label: 'En Revisión', color: '#EF4444', bg: '#FEF2F2', text: '#991B1B', border: '#FECACA' },
+};
+
+const CATEGORY_CONFIG = {
+  comida: { icon: '🍽', label: 'Comida', bg: '#FFF7ED', text: '#C2410C' },
+  renta: { icon: '🏠', label: 'Renta', bg: '#F0FDFA', text: '#0F766E' },
+  vivienda: { icon: '🏡', label: 'Vivienda', bg: '#F0FDFA', text: '#0F766E' },
+  café: { icon: '☕', label: 'Café', bg: '#FAF5FF', text: '#7C3AED' },
+  servicio: { icon: '⚙', label: 'Servicio', bg: '#EFF6FF', text: '#1D4ED8' },
+  farmacia: { icon: '💊', label: 'Farmacia', bg: '#F0FDF4', text: '#15803D' },
+};
+
+const getTier = (score) =>
+  score >= 80 ? TIER_CONFIG.certified : score >= 60 ? TIER_CONFIG.acceptable : TIER_CONFIG.review;
+
+// ── Reusable style functions ──────────────────────────────────
+const STYLES = {
+  badge: (bg, text, border) => ({ background: bg, color: text, border: `1px solid ${border}`, borderRadius: '99px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }),
+  scoreBlock: (tier) => ({ background: tier.bg, border: `1px solid ${tier.border}`, borderRadius: '16px', padding: '10px 14px', textAlign: 'center', flexShrink: 0 }),
+  scoreValue: (tier) => ({ fontSize: '24px', fontWeight: 900, color: tier.text, lineHeight: 1 }),
+  scoreLabel: (tier) => ({ fontSize: '9px', fontWeight: 800, color: tier.text, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '2px' }),
+  progressBar: (tier) => ({ height: '5px', background: '#F1F5F9', borderRadius: '99px', overflow: 'hidden', marginBottom: '6px' }),
+  progressFill: (tier, width) => ({ height: '100%', width: `${width}%`, background: `linear-gradient(90deg, ${tier.color}, ${tier.color}AA)`, borderRadius: '99px', transition: 'width 1s ease' }),
+  button: (bg, text, border) => ({ display: 'flex', alignItems: 'center', gap: '6px', background: bg, color: text, border: `1px solid ${border}`, padding: '10px 16px', borderRadius: '14px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', opacity: 1, transition: 'all 0.15s ease' }),
+};
+
+// ── KarmaCard ─────────────────────────────────────────────────
+function KarmaCard({ poi, onVote, isVoting, hasVoted }) {
+  const tier = getTier(poi.karma);
+  const cat = CATEGORY_CONFIG[poi.category] ?? { icon: '•', label: 'Otros', bg: '#F8FAFC', text: '#475569' };
+
+  const handleVoteClick = (direction) => {
+    if (!isVoting) onVote(poi.id, direction);
+  };
+
+  return (
+    <div style={{ background: 'white', borderRadius: '24px', border: '1px solid #F1F5F9', boxShadow: '0 1px 6px rgba(0,0,0,0.06)', overflow: 'hidden', transition: 'box-shadow 0.2s ease, transform 0.2s ease', fontFamily: "'Inter', sans-serif" }} onMouseOver={e => { e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseOut={e => { e.currentTarget.style.boxShadow = '0 1px 6px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+      <div style={{ display: 'flex' }}>
+        {/* Image */}
+        <div style={{ width: '160px', flexShrink: 0, position: 'relative', overflow: 'hidden', minHeight: '160px' }}>
+          <img src={poi.images?.[0] ?? 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=300&q=70'} alt={poi.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, transparent, rgba(0,0,0,0.1))' }} />
+          <div style={{ position: 'absolute', top: '10px', left: '10px', ...STYLES.badge(tier.bg, tier.text, tier.border) }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: tier.color, flexShrink: 0 }} />
+            {tier.label}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Title + Score */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '18px' }}>{cat.icon}</span>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', margin: 0 }}>{poi.name}</h3>
+                {poi.verified && <span style={{ background: '#DCFCE7', color: '#15803D', fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '99px' }}>Verificado</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ ...STYLES.badge(cat.bg, cat.text, cat.bg) }}>{cat.label}</span>
+                <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>· {poi.zone?.toUpperCase()}</span>
+                {poi.reportCount > 0 && <span style={{ background: '#FEF2F2', color: '#DC2626', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '99px', border: '1px solid #FECACA' }}>Reportes: {poi.reportCount}</span>}
+              </div>
+            </div>
+            <div style={STYLES.scoreBlock(tier)}>
+              <div style={STYLES.scoreValue(tier)}>{poi.karma}</div>
+              <div style={STYLES.scoreLabel(tier)}>Score</div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.6, margin: 0, borderLeft: `3px solid ${tier.color}`, paddingLeft: '12px' }}>{poi.description}</p>
+
+          {/* Progress + Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+                <span>Índice de Veracidad</span>
+                <span>{poi.karma}%</span>
+              </div>
+              <div style={STYLES.progressBar(tier)}>
+                <div style={STYLES.progressFill(tier, poi.karma)} />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '6px', fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>
+                <span>Validaciones: {poi.votes}</span>
+                <span>Reportes: {poi.downvotes}</span>
+              </div>
+            </div>
+
+            {hasVoted ? (
+              <div style={{ flexShrink: 0, background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', fontSize: '12px', fontWeight: 700, padding: '10px 16px', borderRadius: '14px' }}>
+                Votado
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                <button onClick={() => handleVoteClick('up')} disabled={isVoting} style={{ ...STYLES.button('#F0FDF4', '#15803D', '#BBF7D0'), cursor: isVoting ? 'not-allowed' : 'pointer', opacity: isVoting ? 0.6 : 1 }} onMouseOver={e => { if (!isVoting) { e.currentTarget.style.background = '#16A34A'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#16A34A'; } }} onMouseOut={e => { e.currentTarget.style.background = '#F0FDF4'; e.currentTarget.style.color = '#15803D'; e.currentTarget.style.borderColor = '#BBF7D0'; }}>
+                  {isVoting ? '⚙' : '✓'} Validar
+                </button>
+                <button onClick={() => handleVoteClick('down')} disabled={isVoting} style={{ ...STYLES.button('#FEF2F2', '#DC2626', '#FECACA'), cursor: isVoting ? 'not-allowed' : 'pointer', opacity: isVoting ? 0.6 : 1 }} onMouseOver={e => { if (!isVoting) { e.currentTarget.style.background = '#DC2626'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#DC2626'; } }} onMouseOut={e => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.color = '#DC2626'; e.currentTarget.style.borderColor = '#FECACA'; }}>
+                  {isVoting ? '⚙' : '!'} Reportar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// Main Component
+// ══════════════════════════════════════════════════════════════
 export default function KarmaView() {
   const { showToast } = useAppContext();
   const [pois, setPois] = useState([]);
   const [votingId, setVotingId] = useState(null);
+  const [voted, setVoted] = useState({});
+  const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAllPOIs().then(setPois);
+    fetchAllPOIs().then(data => { setPois(data); setLoading(false); });
   }, []);
 
-  const handleVote = async (poiId, val) => {
+  const handleVote = async (poiId, direction) => {
     setVotingId(poiId);
     try {
-      const result = await voteKarma(poiId, val);
-      setPois(pois.map(p => p.id === poiId ? { ...p, karma: result.newKarma } : p));
-      showToast('Voto registrado en el algoritmo global', val > 0 ? 'success' : 'info');
+      const result = await voteKarma(poiId, direction);
+      setPois(prev => prev.map(p => p.id === poiId ? { ...p, karma: result.newKarma, votes: result.votes, downvotes: result.downvotes } : p));
+      setVoted(prev => ({ ...prev, [poiId]: direction }));
+      showToast(direction === 'up' ? 'Validación registrada' : 'Reporte enviado', direction === 'up' ? 'success' : 'info');
     } finally {
       setVotingId(null);
     }
   };
 
+  const certified = pois.filter(p => p.karma >= 80).length;
+  const flagged = pois.filter(p => p.reportCount > 0).length;
+  const inReview = pois.filter(p => p.karma < 60).length;
+
+  const filtered = filter === 'certified' ? pois.filter(p => p.karma >= 80) : filter === 'flagged' ? pois.filter(p => p.reportCount > 0) : filter === 'review' ? pois.filter(p => p.karma < 60) : pois;
+
   return (
-    <div className="animate-fade-in max-w-4xl mx-auto pb-10">
-      <header className="mb-12 text-center">
-        <div className="inline-block rounded-3xl bg-yellow-400/10 p-4 mb-4">
-          <span className="text-4xl">⭐</span>
+    <div style={{ fontFamily: "'Inter', sans-serif", paddingBottom: '40px' }}>
+      {/* Header */}
+      <header style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h2 style={{ fontSize: '26px', fontWeight: 900, color: '#0F172A', margin: 0, letterSpacing: '-0.4px' }}>Trust & Safety</h2>
+            <p style={{ fontSize: '13px', color: '#94A3B8', fontWeight: 500, marginTop: '4px' }}>Tu voto impacta el algoritmo de confianza comunitaria</p>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {[{ label: 'POIs', value: pois.length, bg: 'white', border: '#E2E8F0', text: '#0F172A', sub: '#94A3B8' }, { label: 'Certificados', value: certified, bg: '#F0FDF4', border: '#A7F3D0', text: '#065F46', sub: '#34D399' }, { label: 'Reportados', value: flagged, bg: '#FEF2F2', border: '#FECACA', text: '#991B1B', sub: '#F87171' }].map(s => <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '16px', padding: '12px 18px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}><div style={{ fontSize: '22px', fontWeight: 900, color: s.text, lineHeight: 1 }}>{loading ? '–' : s.value}</div><div style={{ fontSize: '9px', fontWeight: 800, color: s.sub, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '3px' }}>{s.label}</div></div>)}
+          </div>
         </div>
-        <h2 className="text-4xl font-black text-slate-800 tracking-tight">Algoritmo de Karma</h2>
-        <p className="mt-3 text-slate-500 font-medium max-w-lg mx-auto">
-          Tú eres el SQA. Valida la veracidad de los locales para ayudar a otros estudiantes foráneos.
-        </p>
+
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: '8px', marginTop: '20px', flexWrap: 'wrap' }}>
+          {[{ id: 'all', label: `Todos (${pois.length})` }, { id: 'certified', label: `Certificados (${certified})` }, { id: 'flagged', label: `Reportados (${flagged})` }, { id: 'review', label: `En Revisión (${inReview})` }].map(f => (
+            <button key={f.id} onClick={() => setFilter(f.id)} style={{ padding: '7px 16px', borderRadius: '12px', border: filter === f.id ? 'none' : '1px solid #E2E8F0', background: filter === f.id ? '#0F172A' : 'white', color: filter === f.id ? 'white' : '#64748B', fontSize: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s ease', boxShadow: filter === f.id ? '0 2px 8px rgba(15,23,42,0.2)' : 'none' }}>
+              {f.label}
+            </button>
+          ))}
+        </div>
       </header>
 
-      <div className="grid gap-6">
-        {pois.map(poi => (
-          <div key={poi.id} className="group overflow-hidden rounded-[32px] bg-white border border-slate-100 shadow-xl shadow-slate-200/40 p-8 transition-all hover:-translate-y-1">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-2xl font-black text-slate-800">{poi.name}</h3>
-                  <span className={`rounded-xl px-3 py-1 text-[10px] font-black uppercase ${poi.karma >= 80 ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
-                    Score: {poi.karma}
-                  </span>
-                </div>
-                <p className="text-slate-500 font-medium leading-relaxed italic border-l-4 border-indigo-500 pl-4 py-1">
-                  "{poi.description}"
-                </p>
-              </div>
-
-              <div className="flex gap-3 w-full md:w-auto">
-                <button 
-                  onClick={() => handleVote(poi.id, 5)} disabled={votingId === poi.id}
-                  className="flex-1 md:flex-none rounded-2xl bg-emerald-50 p-4 text-sm font-black text-emerald-700 transition-all hover:bg-emerald-600 hover:text-white flex items-center justify-center gap-2"
-                >
-                  <span className="text-lg">👍</span> Validar
-                </button>
-                <button 
-                  onClick={() => handleVote(poi.id, -5)} disabled={votingId === poi.id}
-                  className="flex-1 md:flex-none rounded-2xl bg-red-50 p-4 text-sm font-black text-red-600 transition-all hover:bg-red-600 hover:text-white flex items-center justify-center gap-2"
-                >
-                  <span className="text-lg">👎</span> Reportar
-                </button>
-              </div>
-            </div>
-            
-            {/* Barra de progreso de veracidad */}
-            <div className="mt-8">
-              <div className="flex justify-between text-[10px] font-black uppercase text-slate-400 mb-2">
-                <span>Nivel de Veracidad comunitaria</span>
-                <span>{poi.karma}%</span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-1000 ${poi.karma >= 80 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
-                  style={{ width: `${poi.karma}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Cards */}
+      {loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {[1, 2, 3].map(i => <div key={i} style={{ background: 'white', borderRadius: '24px', height: '160px', border: '1px solid #F1F5F9', display: 'flex' }}><div style={{ width: '160px', background: '#F1F5F9' }} /><div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}><div style={{ height: '18px', background: '#F1F5F9', borderRadius: '8px', width: '60%', animation: 'pulse 1.5s ease infinite' }} /><div style={{ height: '13px', background: '#F1F5F9', borderRadius: '8px', width: '90%', animation: 'pulse 1.5s ease infinite' }} /><div style={{ height: '13px', background: '#F1F5F9', borderRadius: '8px', width: '80%', animation: 'pulse 1.5s ease infinite' }} /></div></div>)}
+          <style>{`@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }`}</style>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94A3B8' }}><div style={{ fontSize: '48px', marginBottom: '12px' }}>∅</div><p style={{ fontWeight: 700, fontSize: '16px', color: '#CBD5E1' }}>Sin resultados</p></div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {filtered.sort((a, b) => b.karma - a.karma).map(poi => (
+            <KarmaCard key={poi.id} poi={poi} onVote={handleVote} isVoting={votingId === poi.id} hasVoted={!!voted[poi.id]} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

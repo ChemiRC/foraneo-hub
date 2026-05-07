@@ -1,63 +1,138 @@
 import { useAppContext } from '../context/AppContext';
 import { useState } from 'react';
 
+const FEATURES = [
+  { icon: '■', text: 'Geofencing por zona universitaria' },
+  { icon: '◆', text: 'Algoritmo de Karma comunitario' },
+  { icon: '◇', text: 'Rentas verificadas anti-fraude' },
+  { icon: '▲', text: 'POS con modelo de comisión 6%' },
+];
+
+const ROLES = [
+  {
+    id: 'foraneo',
+    title: 'Estudiante Foráneo',
+    subtitle: 'Explorar zonas · Auditar locales · Ver rentas',
+    accent: 'indigo',
+  },
+  {
+    id: 'comercio',
+    title: 'Negocio Local',
+    subtitle: 'Terminal POS · Dashboard financiero · Comisión 6%',
+    accent: 'emerald',
+  },
+];
+
 export default function LoginView() {
   const { login, isLoading } = useAppContext();
-  const [hoverRole, setHoverRole] = useState(null);
+  const [hovered, setHovered] = useState(null);
 
   return (
-    <div className="relative flex h-screen items-center justify-center overflow-hidden bg-[#0F172A]">
-      {/* Orbes de luz decorativos para nivel empresarial */}
-      <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-indigo-500/20 blur-[100px]" />
-      <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-emerald-500/10 blur-[100px]" />
+    <div className="relative flex h-screen w-full items-center justify-center overflow-hidden bg-[#080E1A]">
 
-      <div className="relative z-10 w-full max-w-[440px] px-6">
-        <div className="rounded-[40px] border border-white/10 bg-white/5 p-10 shadow-2xl backdrop-blur-2xl">
-          <div className="mb-10 text-center">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl shadow-indigo-500/20">
-              <span className="text-4xl">📍</span>
+      {/* Ambient blobs */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-32 -left-32 h-[500px] w-[500px] animate-pulse rounded-full bg-indigo-700/20 blur-[140px]" />
+        <div className="absolute -bottom-32 -right-32 h-[500px] w-[500px] animate-pulse rounded-full bg-emerald-700/15 blur-[140px]" style={{ animationDelay: '2.5s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[300px] w-[300px] animate-pulse rounded-full bg-purple-700/10 blur-[100px]" style={{ animationDelay: '5s' }} />
+      </div>
+
+      {/* Grid */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
+
+      {/* Main card */}
+      <div className="relative z-10 w-full max-w-[920px] mx-4 rounded-[2.5rem] border border-white/10 bg-white/[0.03] backdrop-blur-2xl shadow-[0_32px_80px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row">
+
+        {/* Left: Branding */}
+        <div className="relative flex-1 p-12 flex flex-col justify-between overflow-hidden bg-gradient-to-br from-indigo-950/60 to-slate-950/60 border-b md:border-b-0 md:border-r border-white/5">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-indigo-500/10 blur-2xl" />
+          <div className="pointer-events-none absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-purple-500/10 blur-2xl" />
+
+          <div className="relative z-10">
+            <div className="mb-8 inline-flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-[0_0_50px_rgba(99,102,241,0.45)] -rotate-6">
+              <span className="text-4xl">◆</span>
             </div>
-            <h1 className="text-4xl font-black tracking-tight text-white">Foráneo Hub</h1>
-            <p className="mt-3 text-sm font-bold uppercase tracking-[0.3em] text-indigo-400/80">
-              Ecosistema Universitario
+
+            <h1 className="text-5xl font-black tracking-tight text-white mb-2 leading-tight">
+              Foráneo<br />Hub
+            </h1>
+            <p className="text-indigo-300/80 text-sm font-semibold uppercase tracking-[0.2em] mb-8">
+              BaaS Platform · SQA Engine
             </p>
+
+            <ul className="space-y-3">
+              {FEATURES.map(f => (
+                <li key={f.text} className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-sm shrink-0 font-bold">
+                    {f.icon}
+                  </span>
+                  <span className="text-sm text-slate-300 font-medium">{f.text}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div className="grid gap-4">
-            <button
-              onMouseEnter={() => setHoverRole('foraneo')}
-              onMouseLeave={() => setHoverRole(null)}
-              onClick={() => login('foraneo')}
-              disabled={isLoading}
-              className="group relative flex w-full items-center justify-center gap-4 overflow-hidden rounded-2xl bg-white/10 p-5 font-bold text-white transition-all hover:bg-white/15 disabled:opacity-50"
-            >
-              <span className="text-2xl transition-transform group-hover:scale-125">👨‍🎓</span>
-              <div className="text-left">
-                <p className="text-sm">Ingresar como Foráneo</p>
-                <p className="text-[10px] font-medium text-slate-400">Busca rentas y servicios validados</p>
-              </div>
-            </button>
+          <div className="relative z-10 mt-10 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.15em]">
+              v2.0 · Universidad de Guadalajara
+            </span>
+          </div>
+        </div>
 
-            <button
-              onMouseEnter={() => setHoverRole('comercio')}
-              onMouseLeave={() => setHoverRole(null)}
-              onClick={() => login('comercio')}
-              disabled={isLoading}
-              className="group relative flex w-full items-center justify-center gap-4 overflow-hidden rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 font-bold text-white transition-all hover:bg-emerald-500/20 disabled:opacity-50"
-            >
-              <span className="text-2xl transition-transform group-hover:scale-125">🏪</span>
-              <div className="text-left">
-                <p className="text-sm">Panel de Comercio</p>
-                <p className="text-[10px] font-medium text-emerald-400/70">Gestiona tus ventas y visibilidad</p>
-              </div>
-            </button>
+        {/* Right: Auth */}
+        <div className="flex-1 p-10 flex flex-col justify-center">
+          <div className="mb-8">
+            <h2 className="text-2xl font-black text-white mb-1">Acceso al Sistema</h2>
+            <p className="text-slate-400 text-sm font-medium">Selecciona tu perfil para continuar</p>
           </div>
 
-          <div className="mt-8 text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-              Desarrollado con Arquitectura BaaS & SQA
-            </p>
+          <div className="space-y-4">
+            {ROLES.map(role => {
+              const isHovered = hovered === role.id;
+              const colorClass = role.accent === 'indigo' ? 'indigo' : 'emerald';
+              const gradients = {
+                indigo: { border: 'border-indigo-500', bg: 'bg-indigo-500/10', glow: 'rgba(99,102,241,0.2)', hover: 'bg-indigo-500' },
+                emerald: { border: 'border-emerald-500', bg: 'bg-emerald-500/10', glow: 'rgba(16,185,129,0.2)', hover: 'bg-emerald-500' },
+              };
+              const g = gradients[colorClass];
+
+              return (
+                <button
+                  key={role.id}
+                  onClick={() => login(role.id)}
+                  onMouseEnter={() => setHovered(role.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  disabled={isLoading}
+                  className={`relative w-full flex items-center gap-5 p-6 rounded-2xl border transition-all duration-300 overflow-hidden text-left disabled:opacity-60 disabled:cursor-wait ${isHovered ? g.border + ' ' + g.bg : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.08]'}`}
+                  style={isHovered ? { boxShadow: `0 0 40px ${g.glow}` } : {}}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-r ${colorClass === 'indigo' ? 'from-indigo-500/20' : 'from-emerald-500/20'} via-transparent to-transparent transition-transform duration-500 ${isHovered ? 'translate-x-0' : '-translate-x-full'}`} />
+                  <span className={`text-5xl relative z-10 transition-transform duration-300 font-bold ${colorClass === 'indigo' ? 'text-indigo-300' : 'text-emerald-300'}`}>■</span>
+                  <div className="relative z-10">
+                    <p className="text-lg font-black text-white">{role.title}</p>
+                    <p className={`text-sm ${colorClass === 'indigo' ? 'text-indigo-200/60' : 'text-emerald-200/60'} font-medium mt-0.5`}>
+                      {role.subtitle}
+                    </p>
+                  </div>
+                  <div className={`ml-auto relative z-10 transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}`}>
+                    <span className={`text-xl font-bold ${colorClass === 'indigo' ? 'text-indigo-400' : 'text-emerald-400'}`}>→</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
+
+          {isLoading && (
+            <div className="mt-6 flex items-center justify-center gap-3 text-slate-400">
+              <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs font-bold uppercase tracking-widest">Autenticando…</span>
+            </div>
+          )}
+
+          <p className="mt-8 text-center text-[11px] text-slate-600 font-medium">
+            Entorno de demostración · Sin datos reales
+          </p>
         </div>
       </div>
     </div>
