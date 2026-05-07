@@ -42,8 +42,8 @@ export default function LoginView() {
             <h1 className="text-5xl font-black tracking-tight text-white mb-2 leading-tight">
               Foráneo<br />Hub
             </h1>
-            <p className="text-indigo-300/80 text-sm font-semibold uppercase tracking-[0.2em] mb-8">
-              BaaS Platform · SQA Engine
+            <p className="text-indigo-300/80 text-sm font-semibold tracking-wide mb-8 leading-relaxed max-w-[240px]">
+              Conectando la economía local con la comunidad universitaria
             </p>
 
             {/* Features */}

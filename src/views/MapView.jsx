@@ -239,6 +239,31 @@ function POIModal({ poi, onClose, onCTA, ctaLoading, onReport, reportLoading }) 
             </div>
           )}
 
+          {/* Discount badge */}
+          <div style={{
+            background: "linear-gradient(135deg, #FFFBEB, #FEF3C7)",
+            border: "1.5px solid #FCD34D",
+            borderRadius: "16px",
+            padding: "14px 18px",
+            marginBottom: "16px",
+            display: "flex",
+            alignItems: "center",
+            gap: "14px",
+          }}>
+            <span style={{ fontSize: "28px", lineHeight: 1 }}>🎁</span>
+            <div>
+              <p style={{ fontSize: "10px", fontWeight: 800, color: "#92400E", margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+                Descuento exclusivo · Pago vía App
+              </p>
+              <p style={{ fontSize: "20px", fontWeight: 900, color: "#B45309", margin: 0, letterSpacing: "-0.5px" }}>
+                15% OFF
+              </p>
+            </div>
+            <div style={{ marginLeft: "auto", background: "#F59E0B", color: "white", fontSize: "10px", fontWeight: 800, padding: "6px 12px", borderRadius: "99px", letterSpacing: "0.3px" }}>
+              USAR APP
+            </div>
+          </div>
+
           {/* CTA Button */}
           <button
             onClick={onCTA}

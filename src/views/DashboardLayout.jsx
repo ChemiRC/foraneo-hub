@@ -12,7 +12,7 @@ export default function DashboardLayout() {
   const navItems = [
     { id: 'mapa', label: 'Geolocalización', sub: 'Mapeo segregado', icon: ICONS.map },
     { id: 'karma', label: 'Auditoría SQA', sub: 'Sistema Karma', icon: ICONS.karma },
-    ...(user.role === 'comercio' ? [{ id: 'negocios', label: 'Finanzas Hub', sub: 'Modelo 6%', icon: ICONS.finance }] : []),
+    ...(user.role === 'comercio' ? [{ id: 'negocios', label: 'Pagos y Beneficios', sub: 'Validación App', icon: ICONS.finance }] : []),
   ];
 
   const isMapView = currentView === 'mapa';
