@@ -348,26 +348,29 @@ const BUSINESSES_DB = [
   },
 ];
 
-// ── Transacciones con comisión del 6% ─────────────────────────
+// ── Transacciones con comisión del 6% (Costo de Infraestructura BaaS) ──
+//    discountApplied: % descuento ciudadano aplicado al pagar vía CivicTrust App
 const TRANSACTIONS_DB = [
   {
     id: "txn_001",
     businessId: "biz_001",
     description: "Torta Ahogada Especial x2",
     subtotal: 130.0,
+    discountApplied: 0.15,
     commissionRate: 0.06,
     commission: 7.8,
     net: 122.2,
     status: "completada",
     customer: "Camila R.",
     createdAt: "2025-05-06T14:32:00Z",
-    method: "card",
+    method: "civictrust_app",
   },
   {
     id: "txn_002",
     businessId: "biz_001",
     description: "Torta de Pierna + Agua Fresca",
     subtotal: 75.0,
+    discountApplied: 0,
     commissionRate: 0.06,
     commission: 4.5,
     net: 70.5,
@@ -381,19 +384,21 @@ const TRANSACTIONS_DB = [
     businessId: "biz_001",
     description: "Orden para oficina x5",
     subtotal: 325.0,
+    discountApplied: 0.15,
     commissionRate: 0.06,
     commission: 19.5,
     net: 305.5,
     status: "completada",
     customer: "Andrés V.",
     createdAt: "2025-05-05T13:55:00Z",
-    method: "transfer",
+    method: "civictrust_app",
   },
   {
     id: "txn_004",
     businessId: "biz_001",
     description: "Torta de Lomo",
     subtotal: 65.0,
+    discountApplied: 0,
     commissionRate: 0.06,
     commission: 3.9,
     net: 61.1,
@@ -407,13 +412,14 @@ const TRANSACTIONS_DB = [
     businessId: "biz_002",
     description: "Americano + Brownie + 2hrs Coworking",
     subtotal: 120.0,
+    discountApplied: 0.15,
     commissionRate: 0.06,
     commission: 7.2,
     net: 112.8,
     status: "completada",
     customer: "Sofía H.",
     createdAt: "2025-05-06T10:30:00Z",
-    method: "card",
+    method: "civictrust_app",
   },
 ];
 
@@ -605,21 +611,31 @@ export async function fetchTransactions(bizId = "biz_001") {
   return { transactions: txns, totalRevenue, totalCommission, totalNet };
 }
 
-/** Registra una transacción nueva */
+/** Registra una transacción nueva — soporta discountApplied (descuento ciudadano CivicTrust) */
 export async function createTransaction(bizId, data) {
-  await jitter(1200, 300); // Simula Stripe + Cloud Function
-  const commission = parseFloat((data.subtotal * 0.06).toFixed(2));
-  const net = parseFloat((data.subtotal - commission).toFixed(2));
+  await jitter(1200, 300); // Simula Stripe + Cloud Function (BaaS)
+  const discountApplied = data.discountApplied ?? 0;
+  // Subtotal después del descuento ciudadano
+  const subtotalCobrado = parseFloat((data.subtotal * (1 - discountApplied)).toFixed(2));
+  // Comisión BaaS (6%) sobre el subtotal cobrado
+  const commission = parseFloat((subtotalCobrado * 0.06).toFixed(2));
+  const net = parseFloat((subtotalCobrado - commission).toFixed(2));
   const newTxn = {
     id: `txn_${Date.now()}`,
     businessId: bizId,
     commissionRate: 0.06,
     commission,
     net,
+    discountApplied,
     status: "completada",
     createdAt: new Date().toISOString(),
-    method: data.method || "card",
+    method: discountApplied > 0 ? "civictrust_app" : (data.method || "card"),
     ...data,
+    // Re-aseguramos los valores calculados
+    subtotal: subtotalCobrado,
+    commission,
+    net,
+    discountApplied,
   };
   TRANSACTIONS_DB.unshift(newTxn);
   return newTxn;
@@ -663,16 +679,20 @@ export const mockApi = {
       }, 1200);
     });
   },
-  processCommission: async (amount, description) => {
-    // Usamos la nueva función createTransaction que hizo Claude
-    const txn = await createTransaction("COM-104", { subtotal: amount });
+  processCommission: async (amount, description, opts = {}) => {
+    // opts.discountApplied: número entre 0 y 1 (ej. 0.15 = 15% OFF ciudadano)
+    const discountApplied = opts.discountApplied ?? 0;
+    const txn = await createTransaction("COM-104", { subtotal: amount, discountApplied });
     return {
       id: txn.id,
-      desc: description || 'Venta Mostrador',
-      amount: amount,
+      desc: description || 'Pago vía CivicTrust App',
+      amount: txn.subtotal,
+      grossAmount: amount,
+      discountApplied,
       commission: txn.commission,
       net: txn.net,
       status: 'Aprobado',
+      method: txn.method,
       date: new Date().toLocaleTimeString()
     };
   },

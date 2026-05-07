@@ -161,30 +161,57 @@ export default function KarmaView() {
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", paddingBottom: '40px' }}>
-      {/* Header */}
+      {/* Header · Trust & Safety Center */}
       <header style={{ marginBottom: '28px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '8px', padding: '3px 10px', borderRadius: '99px', background: '#EEF2FF', border: '1px solid #C7D2FE' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 0 3px #10B98133' }} />
+              <span style={{ fontSize: '10px', fontWeight: 900, color: '#4338CA', textTransform: 'uppercase', letterSpacing: '0.18em' }}>Trust & Safety · Sistema activo</span>
+            </div>
             <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: 0, letterSpacing: '-0.4px' }}>
-              🔐 Trust & Safety
+              ⚖️ Auditoría Ciudadana
             </h2>
-            <p style={{ fontSize: '13px', color: '#94A3B8', fontWeight: 500, marginTop: '4px' }}>
-              Tu voto impacta el algoritmo de confianza comunitaria
+            <p style={{ fontSize: '13px', color: '#64748B', fontWeight: 500, marginTop: '4px' }}>
+              Tu voto recalibra el algoritmo de Karma · cada validación fortalece la confianza barrial
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {[
-              { label: 'Total', value: pois.length, bg: 'white', border: '#E2E8F0' },
-              { label: 'Certificados', value: certified, bg: '#F0FDF4', border: '#A7F3D0' },
-              { label: 'Con reportes', value: flagged, bg: '#FEF2F2', border: '#FECACA' },
+              { label: 'Auditados', value: pois.length, bg: 'white', border: '#E2E8F0', color: '#0F172A' },
+              { label: 'Certificados', value: certified, bg: '#F0FDF4', border: '#A7F3D0', color: '#15803D' },
+              { label: 'Con reportes', value: flagged, bg: '#FEF2F2', border: '#FECACA', color: '#DC2626' },
             ].map(s => (
-              <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '16px', padding: '10px 16px', textAlign: 'center' }}>
-                <div style={{ fontSize: '18px', fontWeight: 900, color: '#0F172A' }}>{loading ? '–' : s.value}</div>
-                <div style={{ fontSize: '9px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', marginTop: '3px' }}>{s.label}</div>
+              <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '16px', padding: '10px 16px', textAlign: 'center', minWidth: '88px' }}>
+                <div style={{ fontSize: '20px', fontWeight: 900, color: s.color }}>{loading ? '–' : s.value}</div>
+                <div style={{ fontSize: '9px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', marginTop: '3px', letterSpacing: '0.5px' }}>{s.label}</div>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Salud global de confianza */}
+        {!loading && pois.length > 0 && (() => {
+          const avgKarma = Math.round(pois.reduce((acc, p) => acc + p.karma, 0) / pois.length);
+          const tierColor = avgKarma >= 80 ? '#10B981' : avgKarma >= 60 ? '#F59E0B' : '#EF4444';
+          const tierLabel = avgKarma >= 80 ? 'Confianza Alta' : avgKarma >= 60 ? 'Confianza Media' : 'Requiere Atención';
+          return (
+            <div style={{ marginTop: '18px', background: 'white', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+              <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: `${tierColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
+                🛡
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Salud global de confianza barrial</span>
+                  <span style={{ fontSize: '14px', fontWeight: 900, color: tierColor }}>{avgKarma}/100 · {tierLabel}</span>
+                </div>
+                <div style={{ height: '8px', background: '#F1F5F9', borderRadius: '99px', overflow: 'hidden' }}>
+                  <div style={{ width: `${avgKarma}%`, height: '100%', borderRadius: '99px', background: `linear-gradient(90deg, ${tierColor}, ${tierColor}AA)`, transition: 'width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Filters */}
         <div style={{ display: 'flex', gap: '8px', marginTop: '18px', flexWrap: 'wrap' }}>

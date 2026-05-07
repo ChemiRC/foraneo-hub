@@ -560,17 +560,17 @@ export default function MapView() {
 
       {/* Sidebar */}
       <div style={{ width: "380px", flexShrink: 0, display: "flex", flexDirection: "column", background: "white", borderRight: "1px solid #F3F4F6", zIndex: 10 }}>
-        {/* Header */}
+        {/* Header CivicTrust */}
         <div style={{ padding: "20px", borderBottom: "1px solid #F3F4F6", background: "white" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-            <div style={{ width: "36px", height: "36px", background: "linear-gradient(135deg, #FF6B35, #FF8C69)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: 700 }}>
-              📍
+            <div style={{ width: "38px", height: "38px", background: "linear-gradient(135deg, #6366F1, #8B5CF6, #10B981)", borderRadius: "11px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: 700, boxShadow: "0 6px 18px rgba(99,102,241,0.35)" }}>
+              🗺
             </div>
             <div>
-              <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", letterSpacing: "-0.3px" }}>
-                Foráneo Hub
+              <div style={{ fontSize: "15px", fontWeight: 900, color: "#111827", letterSpacing: "-0.3px" }}>
+                Mapa de Confianza
               </div>
-              <div style={{ fontSize: "11px", color: "#6B7280" }}>Mapa validado por la comunidad</div>
+              <div style={{ fontSize: "11px", color: "#6B7280", fontWeight: 500 }}>CivicTrust México · validado ciudadano</div>
             </div>
           </div>
 
@@ -673,8 +673,8 @@ export default function MapView() {
 
         {/* Footer */}
         <div style={{ padding: "10px 16px", borderTop: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: "11px", color: "#9CA3AF" }}>🔒 Mapa segregado por zona · BaaS Firebase</span>
-          <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 600 }}>● Online</span>
+          <span style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: 500 }}>🔒 Geofencing cívico · BaaS encriptado</span>
+          <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 700 }}>● En vivo</span>
         </div>
       </div>
 
@@ -684,16 +684,66 @@ export default function MapView() {
           <TileLayer attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <FlyToZone center={ZONE_CENTERS[activeZone]} />
           {activeZoneData && (
-            <Circle
-              center={activeZoneData.center}
-              radius={activeZoneData.radius}
-              pathOptions={{ color: activeZoneData.color, fillColor: activeZoneData.color, fillOpacity: 0.07, weight: 2, dashArray: "6, 6" }}
-            />
+            <>
+              {/* Zona de Alta Confianza (núcleo) */}
+              <Circle
+                center={activeZoneData.center}
+                radius={activeZoneData.radius * 0.45}
+                pathOptions={{ color: "#10B981", fillColor: "#10B981", fillOpacity: 0.12, weight: 1.5 }}
+              />
+              {/* Zona de Confianza Media */}
+              <Circle
+                center={activeZoneData.center}
+                radius={activeZoneData.radius * 0.75}
+                pathOptions={{ color: "#F59E0B", fillColor: "#F59E0B", fillOpacity: 0.06, weight: 1.5, dashArray: "4, 6" }}
+              />
+              {/* Perímetro de la zona barrial */}
+              <Circle
+                center={activeZoneData.center}
+                radius={activeZoneData.radius}
+                pathOptions={{ color: activeZoneData.color, fillColor: activeZoneData.color, fillOpacity: 0.04, weight: 2, dashArray: "6, 6" }}
+              />
+            </>
           )}
           {filteredPOIs.map((poi) => (
             <Marker key={poi.id} position={poi.coords} icon={createMarkerIcon(poi.category, poi.karma)} eventHandlers={{ click: () => openModal(poi) }} />
           ))}
         </MapContainer>
+
+        {/* Leyenda de Zonas de Confianza */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "16px",
+            right: "16px",
+            zIndex: 1000,
+            background: "rgba(255,255,255,0.95)",
+            backdropFilter: "blur(12px)",
+            borderRadius: "14px",
+            padding: "12px 14px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+            border: "1px solid rgba(0,0,0,0.06)",
+            minWidth: "180px",
+          }}
+        >
+          <div style={{ fontSize: "10px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: "8px" }}>
+            🛡 Zonas de Confianza
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#10B981", boxShadow: "0 0 0 3px #10B98133" }} />
+              <span style={{ fontSize: "11px", fontWeight: 600, color: "#374151" }}>Núcleo cívico (alta)</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#F59E0B", boxShadow: "0 0 0 3px #F59E0B33" }} />
+              <span style={{ fontSize: "11px", fontWeight: 600, color: "#374151" }}>Zona media</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: activeZoneData?.color ?? "#94A3B8", boxShadow: `0 0 0 3px ${(activeZoneData?.color ?? "#94A3B8")}33` }} />
+              <span style={{ fontSize: "11px", fontWeight: 600, color: "#374151" }}>Perímetro barrial</span>
+            </div>
+          </div>
+        </div>
 
         {/* Zone badge */}
         {activeZoneData && (
@@ -714,10 +764,10 @@ export default function MapView() {
             }}
           >
             <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: activeZoneData.color, boxShadow: `0 0 0 3px ${activeZoneData.color}33` }} />
-            <span style={{ fontWeight: 700, fontSize: "13px", color: "#111827" }}>Zona {activeZoneData.name}</span>
+            <span style={{ fontWeight: 800, fontSize: "13px", color: "#111827" }}>Zona {activeZoneData.name}</span>
             <span style={{ fontSize: "11px", color: "#6B7280" }}>
-              Optimizado ·{" "}
-              <span style={{ color: "#10B981", fontWeight: 600 }}>Activo</span>
+              Confianza ·{" "}
+              <span style={{ color: "#10B981", fontWeight: 700 }}>Alta</span>
             </span>
           </div>
         )}
