@@ -566,3 +566,37 @@ export async function fetchCurrentUser() {
   await jitter(300, 50);
   return USERS[0]; // Camila como usuario activo por defecto
 }
+// =====================================================================
+// CAPA DE COMPATIBILIDAD (Para no romper AppContext ni BusinessPanel)
+// =====================================================================
+export const mockApi = {
+  login: async (role) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          id: role === 'foraneo' ? 'FOR-892' : 'COM-104',
+          name: role === 'foraneo' ? 'Usuario Foráneo' : 'Fonda Las Cazuelas',
+          role: role,
+          avatar: role === 'foraneo' ? 'F' : 'C',
+        });
+      }, 1200);
+    });
+  },
+  processCommission: async (amount, description) => {
+    // Usamos la nueva función createTransaction que hizo Claude
+    const txn = await createTransaction("COM-104", { subtotal: amount });
+    return {
+      id: txn.id,
+      desc: description || 'Venta Mostrador',
+      amount: amount,
+      commission: txn.commission,
+      net: txn.net,
+      status: 'Aprobado',
+      date: new Date().toLocaleTimeString()
+    };
+  },
+  voteKarma: async (poiId, val) => {
+    // Usamos la nueva función voteKarma que hizo Claude
+    return voteKarma(poiId, val);
+  }
+};
