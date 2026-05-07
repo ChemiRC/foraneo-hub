@@ -1,126 +1,156 @@
 import { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { createTransaction, getBusinessStats } from '../services/mockApi';
-import Skeleton from '../components/ui/Skeleton';
+import { mockApi } from '../services/mockApi';
 
 export default function BusinessPanel() {
-  const { showToast, user } = useAppContext();
-  const [subtotal, setSubtotal] = useState('');
-  const [desc, setDesc] = useState('');
-  const [stats, setStats] = useState(null);
+  const { showToast } = useAppContext();
+  const [ticketAmount, setTicketAmount] = useState('');
+  const [ticketDesc, setTicketDesc] = useState('Venta mostrador');
+  const [transactions, setTransactions] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const [dailyStats, setDailyStats] = useState({ total: 0, net: 0, fee: 0, count: 0 });
 
   useEffect(() => {
-    getBusinessStats(user.id).then(setStats);
-  }, [user.id, isProcessing]);
+    const total = transactions.reduce((acc, curr) => acc + curr.amount, 0);
+    const fee = transactions.reduce((acc, curr) => acc + curr.commission, 0);
+    setDailyStats({ total, fee, net: total - fee, count: transactions.length });
+  }, [transactions]);
 
   const handleCharge = async () => {
-    const amount = parseFloat(subtotal);
-    if (!amount || amount <= 0) return showToast('Monto inválido', 'error');
-    
+    const amount = parseFloat(ticketAmount);
+    if (isNaN(amount) || amount <= 0) return showToast('Error: Monto inválido', 'error');
+
     setIsProcessing(true);
     try {
-      await createTransaction(user.id, { subtotal: amount, description: desc || 'Venta Mostrador' });
-      showToast('Transacción procesada y comisión aplicada', 'success');
-      setSubtotal('');
-      setDesc('');
+      const trx = await mockApi.processCommission(amount, ticketDesc);
+      setTransactions([trx, ...transactions]);
+      setTicketAmount('');
+      setTicketDesc('Venta mostrador');
+      showToast('Pago capturado exitosamente', 'success');
+    } catch (e) {
+      showToast('Fallo en el gateway de pago', 'error');
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const setQuickSale = (amount, desc) => {
+    setTicketAmount(amount.toString());
+    setTicketDesc(desc);
+  };
+
   return (
-    <div className="animate-fade-in h-full flex flex-col">
-      <header className="mb-10 flex items-end justify-between">
+    <section className="animate-fade-in flex flex-col h-full">
+      <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight">Panel Financiero</h2>
-          <p className="mt-1 text-slate-500 font-medium tracking-tight">Modelo de negocio basado en comisión transaccional.</p>
-        </div>
-        <div className="flex gap-4">
-          <div className="rounded-2xl bg-white border border-slate-100 p-4 shadow-sm text-right">
-            <p className="text-[10px] font-black uppercase text-slate-400">Total Bruto</p>
-            <p className="text-xl font-black text-slate-800">${stats?.totalRevenue.toFixed(2) || '0.00'}</p>
-          </div>
-          <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 shadow-sm text-right">
-            <p className="text-[10px] font-black uppercase text-emerald-600">Ingreso Neto</p>
-            <p className="text-xl font-black text-emerald-700">${stats?.totalNet.toFixed(2) || '0.00'}</p>
-          </div>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tight">Finanzas Locales</h2>
+          <p className="text-slate-500 font-bold text-sm uppercase tracking-widest mt-1 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Modelo Transaccional Activo (6%)
+          </p>
         </div>
       </header>
 
-      <div className="grid flex-1 grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Terminal Punto de Venta */}
-        <div className="lg:col-span-1 rounded-[40px] bg-slate-900 p-10 text-white shadow-2xl">
-          <h3 className="mb-8 text-xl font-black">Terminal POS</h3>
-          <div className="space-y-6">
-            <div>
-              <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-400">Descripción</label>
-              <input 
-                type="text" value={desc} onChange={e => setDesc(e.target.value)}
-                placeholder="Ej. Comida Corrida"
-                className="w-full rounded-2xl bg-white/5 border border-white/10 p-4 font-bold text-white outline-none focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-400">Monto Subtotal</label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-500">$</span>
-                <input 
-                  type="number" value={subtotal} onChange={e => setSubtotal(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full rounded-2xl bg-white/10 p-5 pl-10 text-3xl font-black text-white outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+      {/* MÉTRICAS FINANCIERAS (DASHBOARD) */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-50 rounded-full mix-blend-multiply"></div>
+          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">Venta Bruta</p>
+          <p className="text-3xl font-black text-slate-800">${dailyStats.total.toFixed(2)}</p>
+        </div>
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-red-50 rounded-full mix-blend-multiply"></div>
+          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">Comisión Retenida (6%)</p>
+          <p className="text-3xl font-black text-red-500">-${dailyStats.fee.toFixed(2)}</p>
+        </div>
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-[2rem] shadow-lg shadow-emerald-500/20 text-white relative overflow-hidden md:col-span-2 flex items-center justify-between">
+          <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-xl"></div>
+          <div className="relative z-10">
+            <p className="text-[11px] font-black uppercase tracking-widest text-emerald-100 mb-2">Ingreso Neto a Transferir</p>
+            <p className="text-4xl font-black">${dailyStats.net.toFixed(2)} <span className="text-lg font-medium text-emerald-200">MXN</span></p>
+          </div>
+          <div className="relative z-10 text-right hidden sm:block">
+            <p className="text-4xl font-black">{dailyStats.count}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-200">Txns de hoy</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 flex-1">
+        {/* TERMINAL POS MODERNA */}
+        <div className="xl:col-span-1 bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col overflow-hidden">
+          <div className="p-8 bg-slate-900 text-white">
+            <h3 className="font-black text-xl flex items-center gap-2 mb-6"><span>💳</span> Terminal Virtual</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Concepto de Venta</label>
+                <input type="text" value={ticketDesc} onChange={(e) => setTicketDesc(e.target.value)} disabled={isProcessing} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 font-bold text-white outline-none focus:border-indigo-400 focus:bg-white/20 transition-all placeholder-slate-500" placeholder="Ej. Paquete Foráneo" />
               </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Importe (MXN)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black text-2xl">$</span>
+                  <input type="number" value={ticketAmount} onChange={(e) => setTicketAmount(e.target.value)} disabled={isProcessing} className="w-full bg-white/10 border border-white/20 rounded-xl pl-12 pr-4 py-4 text-4xl font-black text-white outline-none focus:border-emerald-400 focus:bg-white/20 transition-all placeholder-slate-600" placeholder="0.00" />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-8 flex-1 flex flex-col bg-slate-50">
+            <div className="grid grid-cols-2 gap-3 mb-8">
+              <button onClick={() => setQuickSale(85, 'Menú Económico')} className="bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-600 py-3 rounded-xl text-xs font-bold transition-all shadow-sm">🍔 Menú ($85)</button>
+              <button onClick={() => setQuickSale(120, 'Lavandería Completa')} className="bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-600 py-3 rounded-xl text-xs font-bold transition-all shadow-sm">🧺 Lavado ($120)</button>
             </div>
 
             {/* Recibo Transparente */}
-            <div className="rounded-3xl bg-white/5 p-6 border border-white/5">
-              <div className="flex justify-between text-sm mb-2 text-slate-300">
-                <span>Comisión Hub (6%)</span>
-                <span className="font-bold text-red-400">-${(subtotal * 0.06).toFixed(2)}</span>
-              </div>
-              <div className="h-px bg-white/10 my-4" />
-              <div className="flex justify-between text-lg font-black text-emerald-400">
-                <span>Tu Ganancia</span>
-                <span>${(subtotal * 0.94).toFixed(2)}</span>
-              </div>
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6">
+              <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 pb-2 mb-3">Detalle de Operación</h4>
+              <div className="flex justify-between text-sm mb-2 text-slate-600 font-medium"><span>Monto Cobrado</span><span className="font-bold text-slate-800">${ticketAmount || '0.00'}</span></div>
+              <div className="flex justify-between text-sm mb-3 text-slate-600 font-medium"><span>Tarifa Foráneo Hub</span><span className="font-bold text-red-500">-${ticketAmount ? (ticketAmount * 0.06).toFixed(2) : '0.00'}</span></div>
+              <div className="border-t border-slate-100 pt-3 flex justify-between items-center"><span className="font-black text-emerald-600 text-sm">Ingreso Neto</span><span className="font-black text-emerald-600 text-2xl">${ticketAmount ? (ticketAmount * 0.94).toFixed(2) : '0.00'}</span></div>
             </div>
 
-            <button 
-              onClick={handleCharge} disabled={isProcessing || !subtotal}
-              className="w-full rounded-2xl bg-indigo-600 py-5 font-black uppercase tracking-widest shadow-xl shadow-indigo-900/40 transition-all hover:bg-indigo-500 disabled:opacity-50"
-            >
-              {isProcessing ? 'Procesando...' : 'Confirmar Cobro'}
+            <button onClick={handleCharge} disabled={isProcessing || !ticketAmount} className="mt-auto w-full bg-slate-900 hover:bg-indigo-600 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-slate-900/20 disabled:opacity-50 flex justify-center items-center gap-3">
+              {isProcessing ? <span className="animate-spin text-xl">⚙️</span> : <span className="text-xl">💳</span>} 
+              {isProcessing ? 'Procesando en Servidor...' : 'Procesar Pago'}
             </button>
           </div>
         </div>
 
-        {/* Historial de Transacciones */}
-        <div className="lg:col-span-2 rounded-[40px] bg-white border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-            <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs">Auditoría de Pagos</h3>
-            <span className="text-[10px] font-bold text-slate-400 italic">Datos encriptados vía BaaS</span>
+        {/* HISTORIAL TIPO STRIPE */}
+        <div className="xl:col-span-2 bg-white rounded-[2.5rem] shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+          <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white">
+            <h3 className="font-black text-slate-800 text-xl">Actividad de la Cuenta</h3>
+            <button className="text-xs font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-colors">Exportar CSV</button>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          
+          <div className="overflow-y-auto flex-1 p-0 bg-slate-50/50">
             <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  <th className="px-8 py-5">Referencia</th>
-                  <th className="px-8 py-5 text-right">Bruto</th>
-                  <th className="px-8 py-5 text-right">Mantenimiento (6%)</th>
-                  <th className="px-8 py-5 text-right text-emerald-600">Neto</th>
+              <thead className="bg-white sticky top-0 shadow-sm border-b border-slate-200 z-10">
+                <tr>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Referencia / Hora</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Volumen</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Fee (6%)</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-emerald-600 uppercase tracking-widest text-right">Neto</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
-                {stats?.transactions.map(t => (
-                  <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+              <tbody className="divide-y divide-slate-100">
+                {isProcessing && <tr><td colSpan="5" className="px-8 py-6"><div className="h-12 bg-slate-200 animate-pulse rounded-xl w-full"></div></td></tr>}
+                {transactions.length === 0 && !isProcessing && (
+                  <tr><td colSpan="5" className="px-8 py-24 text-center text-slate-400"><span className="text-4xl mb-4 block">🧾</span><p className="font-bold text-sm">El libro mayor está vacío.</p></td></tr>
+                )}
+                {transactions.map((trx, idx) => (
+                  <tr key={idx} className="bg-white hover:bg-indigo-50/30 transition-colors group">
                     <td className="px-8 py-5">
-                      <p className="text-sm font-bold text-slate-700">{t.description}</p>
-                      <p className="text-[10px] font-mono text-slate-400 uppercase">{t.id}</p>
+                      <p className="text-slate-500 font-mono text-[10px] mb-1">{trx.id}</p>
+                      <p className="text-slate-800 font-bold text-xs">{trx.date}</p>
                     </td>
-                    <td className="px-8 py-5 text-right font-black text-slate-400">${t.subtotal.toFixed(2)}</td>
-                    <td className="px-8 py-5 text-right font-black text-red-400">-${t.commission.toFixed(2)}</td>
-                    <td className="px-8 py-5 text-right"><span className="rounded-xl bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700">${t.net.toFixed(2)}</span></td>
+                    <td className="px-8 py-5 font-bold text-slate-600 text-sm">{trx.desc}</td>
+                    <td className="px-8 py-5 text-right font-black text-slate-400 text-sm">${trx.amount.toFixed(2)}</td>
+                    <td className="px-8 py-5 text-right font-black text-red-400 text-sm">-${trx.commission.toFixed(2)}</td>
+                    <td className="px-8 py-5 text-right"><span className="bg-emerald-100 text-emerald-700 font-black px-3 py-1 rounded-lg text-sm">${trx.net.toFixed(2)}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -128,6 +158,6 @@ export default function BusinessPanel() {
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
