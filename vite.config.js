@@ -7,6 +7,5 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  // IMPORTANTE: Cambia 'app-foraneo' por el nombre EXACTO que le pondrás a tu repositorio en GitHub
-  base: '/app-foraneo/', 
+  base: '/foraneo-hub/', 
 })

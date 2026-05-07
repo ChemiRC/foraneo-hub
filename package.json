@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://github.com/ChemiRC/foraneo-hub",
+  "homepage": "https://ChemiRC.github.io/foraneo-hub",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
