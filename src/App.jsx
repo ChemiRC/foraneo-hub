@@ -4,6 +4,6 @@ import DashboardLayout from './views/DashboardLayout';
 
 export default function App() {
   const { user } = useAppContext();
-  // El enrutamiento se maneja puramente por estado, asegurando 0 errores en GitHub Pages.
+  // Si no hay usuario, muestra Login. Si hay, muestra el Dashboard complejo.
   return !user ? <LoginView /> : <DashboardLayout />;
 }
