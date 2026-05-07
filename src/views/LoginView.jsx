@@ -1,24 +1,64 @@
 import { useAppContext } from '../context/AppContext';
+import { useState } from 'react';
 
 export default function LoginView() {
   const { login, isLoading } = useAppContext();
+  const [hoverRole, setHoverRole] = useState(null);
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gradient-to-br from-indigo-900 via-slate-900 to-black">
-      <div className="bg-white/10 backdrop-blur-md p-12 rounded-3xl shadow-2xl w-[400px] text-center border border-white/20">
-        <div className="w-20 h-20 bg-indigo-500 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg transform rotate-3">
-          <span className="text-4xl text-white">📍</span>
+    <div className="relative flex h-screen items-center justify-center overflow-hidden bg-[#0F172A]">
+      {/* Orbes de luz decorativos para nivel empresarial */}
+      <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-indigo-500/20 blur-[100px]" />
+      <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-emerald-500/10 blur-[100px]" />
+
+      <div className="relative z-10 w-full max-w-[440px] px-6">
+        <div className="rounded-[40px] border border-white/10 bg-white/5 p-10 shadow-2xl backdrop-blur-2xl">
+          <div className="mb-10 text-center">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl shadow-indigo-500/20">
+              <span className="text-4xl">📍</span>
+            </div>
+            <h1 className="text-4xl font-black tracking-tight text-white">Foráneo Hub</h1>
+            <p className="mt-3 text-sm font-bold uppercase tracking-[0.3em] text-indigo-400/80">
+              Ecosistema Universitario
+            </p>
+          </div>
+
+          <div className="grid gap-4">
+            <button
+              onMouseEnter={() => setHoverRole('foraneo')}
+              onMouseLeave={() => setHoverRole(null)}
+              onClick={() => login('foraneo')}
+              disabled={isLoading}
+              className="group relative flex w-full items-center justify-center gap-4 overflow-hidden rounded-2xl bg-white/10 p-5 font-bold text-white transition-all hover:bg-white/15 disabled:opacity-50"
+            >
+              <span className="text-2xl transition-transform group-hover:scale-125">👨‍🎓</span>
+              <div className="text-left">
+                <p className="text-sm">Ingresar como Foráneo</p>
+                <p className="text-[10px] font-medium text-slate-400">Busca rentas y servicios validados</p>
+              </div>
+            </button>
+
+            <button
+              onMouseEnter={() => setHoverRole('comercio')}
+              onMouseLeave={() => setHoverRole(null)}
+              onClick={() => login('comercio')}
+              disabled={isLoading}
+              className="group relative flex w-full items-center justify-center gap-4 overflow-hidden rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 font-bold text-white transition-all hover:bg-emerald-500/20 disabled:opacity-50"
+            >
+              <span className="text-2xl transition-transform group-hover:scale-125">🏪</span>
+              <div className="text-left">
+                <p className="text-sm">Panel de Comercio</p>
+                <p className="text-[10px] font-medium text-emerald-400/70">Gestiona tus ventas y visibilidad</p>
+              </div>
+            </button>
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+              Desarrollado con Arquitectura BaaS & SQA
+            </p>
+          </div>
         </div>
-        <h1 className="text-4xl font-black text-white mb-2 tracking-tight">Foráneo Hub</h1>
-        <p className="text-indigo-200 mb-10 text-sm font-bold uppercase tracking-widest">BaaS Architecture</p>
-        
-        <button onClick={() => login('foraneo')} disabled={isLoading} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl mb-4 hover:bg-indigo-500 transition-all shadow-lg disabled:opacity-50 flex justify-center items-center gap-2">
-          {isLoading ? <span className="animate-spin">⏳</span> : '👨‍🎓'} Ingreso Foráneo
-        </button>
-        
-        <button onClick={() => login('comercio')} disabled={isLoading} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-400 transition-all shadow-lg disabled:opacity-50 flex justify-center items-center gap-2">
-          {isLoading ? <span className="animate-spin">⏳</span> : '🏪'} Panel Comercial
-        </button>
       </div>
     </div>
   );

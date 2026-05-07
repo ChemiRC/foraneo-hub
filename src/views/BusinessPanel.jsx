@@ -1,135 +1,126 @@
 import { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { mockApi } from '../services/mockApi';
+import { createTransaction, getBusinessStats } from '../services/mockApi';
 import Skeleton from '../components/ui/Skeleton';
 
 export default function BusinessPanel() {
-  const { showToast } = useAppContext();
-  const [ticketAmount, setTicketAmount] = useState('');
-  const [ticketDesc, setTicketDesc] = useState('Venta mostrador');
-  const [transactions, setTransactions] = useState([]);
+  const { showToast, user } = useAppContext();
+  const [subtotal, setSubtotal] = useState('');
+  const [desc, setDesc] = useState('');
+  const [stats, setStats] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  // Resumen del día
-  const [dailyStats, setDailyStats] = useState({ total: 0, net: 0, fee: 0 });
 
   useEffect(() => {
-    const total = transactions.reduce((acc, curr) => acc + curr.amount, 0);
-    const fee = transactions.reduce((acc, curr) => acc + curr.commission, 0);
-    setDailyStats({ total, fee, net: total - fee });
-  }, [transactions]);
+    getBusinessStats(user.id).then(setStats);
+  }, [user.id, isProcessing]);
 
   const handleCharge = async () => {
-    const amount = parseFloat(ticketAmount);
-    if (isNaN(amount) || amount <= 0) return showToast('Por favor ingresa un monto válido', 'error');
-
+    const amount = parseFloat(subtotal);
+    if (!amount || amount <= 0) return showToast('Monto inválido', 'error');
+    
     setIsProcessing(true);
     try {
-      const trx = await mockApi.processCommission(amount, ticketDesc);
-      setTransactions([trx, ...transactions]);
-      setTicketAmount('');
-      setTicketDesc('Venta mostrador');
-      showToast('Cobro procesado exitosamente', 'success');
-    } catch (e) {
-      showToast('Error al procesar el pago', 'error');
+      await createTransaction(user.id, { subtotal: amount, description: desc || 'Venta Mostrador' });
+      showToast('Transacción procesada y comisión aplicada', 'success');
+      setSubtotal('');
+      setDesc('');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const setQuickSale = (amount, desc) => {
-    setTicketAmount(amount.toString());
-    setTicketDesc(desc);
-  };
-
   return (
-    <section className="animate-fade-in h-full flex flex-col">
-      <header className="mb-6 flex justify-between items-end">
+    <div className="animate-fade-in h-full flex flex-col">
+      <header className="mb-10 flex items-end justify-between">
         <div>
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight">Terminal Punto de Venta</h2>
-          <p className="text-slate-500 font-bold text-sm uppercase tracking-widest mt-1">Modelo de Comisión 6%</p>
+          <h2 className="text-3xl font-black text-slate-800 tracking-tight">Panel Financiero</h2>
+          <p className="mt-1 text-slate-500 font-medium tracking-tight">Modelo de negocio basado en comisión transaccional.</p>
         </div>
         <div className="flex gap-4">
-          <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 text-right">
-            <p className="text-[10px] uppercase font-bold text-slate-400">Ventas (Bruto)</p>
-            <p className="font-black text-slate-700">${dailyStats.total.toFixed(2)}</p>
+          <div className="rounded-2xl bg-white border border-slate-100 p-4 shadow-sm text-right">
+            <p className="text-[10px] font-black uppercase text-slate-400">Total Bruto</p>
+            <p className="text-xl font-black text-slate-800">${stats?.totalRevenue.toFixed(2) || '0.00'}</p>
           </div>
-          <div className="bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100 text-right">
-            <p className="text-[10px] uppercase font-bold text-emerald-600">Tu Ganancia Neta</p>
-            <p className="font-black text-emerald-700">${dailyStats.net.toFixed(2)}</p>
+          <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 shadow-sm text-right">
+            <p className="text-[10px] font-black uppercase text-emerald-600">Ingreso Neto</p>
+            <p className="text-xl font-black text-emerald-700">${stats?.totalNet.toFixed(2) || '0.00'}</p>
           </div>
         </div>
       </header>
-      
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* CALCULADORA / POS */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col">
-          <h3 className="font-black text-slate-800 mb-4">Nueva Venta</h3>
-          
-          <div className="grid grid-cols-2 gap-2 mb-6">
-            <button onClick={() => setQuickSale(85, 'Comida Corrida')} className="bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-600 p-2 rounded-xl text-xs font-bold transition-colors">Comida Corrida ($85)</button>
-            <button onClick={() => setQuickSale(120, 'Desayuno Completo')} className="bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-600 p-2 rounded-xl text-xs font-bold transition-colors">Desayuno ($120)</button>
-          </div>
 
-          <div className="space-y-4 mb-6">
+      <div className="grid flex-1 grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* Terminal Punto de Venta */}
+        <div className="lg:col-span-1 rounded-[40px] bg-slate-900 p-10 text-white shadow-2xl">
+          <h3 className="mb-8 text-xl font-black">Terminal POS</h3>
+          <div className="space-y-6">
             <div>
-              <label className="text-xs font-black text-slate-400 uppercase tracking-wider ml-1">Concepto</label>
-              <input type="text" value={ticketDesc} onChange={(e) => setTicketDesc(e.target.value)} disabled={isProcessing} className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all" />
+              <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-400">Descripción</label>
+              <input 
+                type="text" value={desc} onChange={e => setDesc(e.target.value)}
+                placeholder="Ej. Comida Corrida"
+                className="w-full rounded-2xl bg-white/5 border border-white/10 p-4 font-bold text-white outline-none focus:border-indigo-500"
+              />
             </div>
             <div>
-              <label className="text-xs font-black text-slate-400 uppercase tracking-wider ml-1">Monto a cobrar (MXN)</label>
+              <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-400">Monto Subtotal</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black text-lg">$</span>
-                <input type="number" value={ticketAmount} onChange={(e) => setTicketAmount(e.target.value)} disabled={isProcessing} className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-10 pr-4 py-3 text-xl font-black text-slate-800 outline-none focus:border-indigo-500 transition-all" placeholder="0.00" />
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-500">$</span>
+                <input 
+                  type="number" value={subtotal} onChange={e => setSubtotal(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full rounded-2xl bg-white/10 p-5 pl-10 text-3xl font-black text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                />
               </div>
             </div>
-          </div>
-          
-          {/* RECIBO EDUCATIVO */}
-          <div className="bg-slate-900 text-white p-5 rounded-2xl mb-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-bl-full"></div>
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 border-b border-white/10 pb-2 mb-3">Desglose Transparente</h4>
-            <div className="flex justify-between text-sm mb-2"><span className="text-slate-300">Cobro al cliente:</span><span className="font-bold">${ticketAmount || '0.00'}</span></div>
-            <div className="flex justify-between text-sm mb-4"><span className="text-slate-400">Comisión Plataforma (6%):</span><span className="font-bold text-red-400">-${ticketAmount ? (ticketAmount * 0.06).toFixed(2) : '0.00'}</span></div>
-            <div className="flex justify-between text-lg border-t border-white/20 pt-3"><span className="font-black text-emerald-400">Recibes:</span><span className="font-black text-emerald-400">${ticketAmount ? (ticketAmount * 0.94).toFixed(2) : '0.00'}</span></div>
-          </div>
 
-          <button onClick={handleCharge} disabled={isProcessing || !ticketAmount} className="mt-auto w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 flex justify-center items-center gap-2">
-            {isProcessing ? <Skeleton className="h-6 w-6 rounded-full bg-white/30" /> : '✅'} {isProcessing ? 'Procesando en Stripe...' : 'Confirmar Cobro'}
-          </button>
+            {/* Recibo Transparente */}
+            <div className="rounded-3xl bg-white/5 p-6 border border-white/5">
+              <div className="flex justify-between text-sm mb-2 text-slate-300">
+                <span>Comisión Hub (6%)</span>
+                <span className="font-bold text-red-400">-${(subtotal * 0.06).toFixed(2)}</span>
+              </div>
+              <div className="h-px bg-white/10 my-4" />
+              <div className="flex justify-between text-lg font-black text-emerald-400">
+                <span>Tu Ganancia</span>
+                <span>${(subtotal * 0.94).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleCharge} disabled={isProcessing || !subtotal}
+              className="w-full rounded-2xl bg-indigo-600 py-5 font-black uppercase tracking-widest shadow-xl shadow-indigo-900/40 transition-all hover:bg-indigo-500 disabled:opacity-50"
+            >
+              {isProcessing ? 'Procesando...' : 'Confirmar Cobro'}
+            </button>
+          </div>
         </div>
 
-        {/* HISTORIAL */}
-        <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-            <h3 className="font-black text-slate-800">Transacciones Recientes</h3>
-            <span className="text-xs font-bold text-slate-400 bg-white px-3 py-1 rounded-lg border border-slate-200">Hoy</span>
+        {/* Historial de Transacciones */}
+        <div className="lg:col-span-2 rounded-[40px] bg-white border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+          <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+            <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs">Auditoría de Pagos</h3>
+            <span className="text-[10px] font-bold text-slate-400 italic">Datos encriptados vía BaaS</span>
           </div>
-          
-          <div className="overflow-y-auto flex-1 p-0">
+          <div className="flex-1 overflow-y-auto">
             <table className="w-full text-left">
-              <thead className="bg-white sticky top-0 border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hora / Ref</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Concepto</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Bruto</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-emerald-600 uppercase tracking-widest">Neto (Para ti)</th>
+              <thead>
+                <tr className="border-b border-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <th className="px-8 py-5">Referencia</th>
+                  <th className="px-8 py-5 text-right">Bruto</th>
+                  <th className="px-8 py-5 text-right">Mantenimiento (6%)</th>
+                  <th className="px-8 py-5 text-right text-emerald-600">Neto</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {isProcessing && <tr><td colSpan="4" className="px-6 py-4"><Skeleton className="h-10 w-full" /></td></tr>}
-                {transactions.length === 0 && !isProcessing && <tr><td colSpan="4" className="px-6 py-16 text-center text-slate-400 font-bold">Inicia tu primera venta en el panel izquierdo.</td></tr>}
-                
-                {transactions.map((trx, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="text-slate-800 font-bold text-sm">{trx.date}</p>
-                      <p className="text-slate-400 font-bold text-[10px]">{trx.id}</p>
+                {stats?.transactions.map(t => (
+                  <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-8 py-5">
+                      <p className="text-sm font-bold text-slate-700">{t.description}</p>
+                      <p className="text-[10px] font-mono text-slate-400 uppercase">{t.id}</p>
                     </td>
-                    <td className="px-6 py-4 font-bold text-slate-600 text-sm">{trx.desc}</td>
-                    <td className="px-6 py-4 font-black text-slate-400 text-sm">${trx.amount.toFixed(2)}</td>
-                    <td className="px-6 py-4 font-black text-emerald-600 text-md">${trx.net.toFixed(2)}</td>
+                    <td className="px-8 py-5 text-right font-black text-slate-400">${t.subtotal.toFixed(2)}</td>
+                    <td className="px-8 py-5 text-right font-black text-red-400">-${t.commission.toFixed(2)}</td>
+                    <td className="px-8 py-5 text-right"><span className="rounded-xl bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700">${t.net.toFixed(2)}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -137,6 +128,6 @@ export default function BusinessPanel() {
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

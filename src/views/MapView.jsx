@@ -8,6 +8,7 @@ import {
   fetchGeofenceAlerts,
   voteKarma,
 } from "../services/mockApi";
+import { useAppContext } from "../context/AppContext"; // <-- IMPORTACIÓN NUEVA
 
 // ── Corrige el ícono por defecto roto de Leaflet con Vite ─────
 delete L.Icon.Default.prototype._getIconUrl;
@@ -104,8 +105,8 @@ function KarmaBar({ score }) {
   );
 }
 
-// ── Tarjeta POI en el panel lateral ──────────────────────────
-function POICard({ poi, isSelected, onClick }) {
+// ── Tarjeta POI en el panel lateral (CON BOTÓN DE WHATSAPP) ───
+function POICard({ poi, isSelected, onClick, onContact, contactingId }) {
   const color = CATEGORY_COLORS[poi.category] || "#6B7280";
   return (
     <div
@@ -205,6 +206,48 @@ function POICard({ poi, isSelected, onClick }) {
           ))}
         </div>
       )}
+
+      {/* NUEVO BOTÓN DE CONTACTO INTEGRADO */}
+      <button
+        onClick={(e) => onContact(poi.id, e)}
+        disabled={contactingId === poi.id}
+        style={{
+          width: "100%",
+          marginTop: "14px",
+          padding: "10px",
+          background: "rgba(37, 211, 102, 0.1)",
+          color: "#128C7E",
+          border: "none",
+          borderRadius: "10px",
+          fontWeight: 700,
+          fontSize: "13px",
+          cursor: contactingId === poi.id ? "default" : "pointer",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "8px",
+          transition: "background 0.2s",
+          opacity: contactingId === poi.id ? 0.7 : 1,
+        }}
+        onMouseOver={(e) => {
+          if (contactingId !== poi.id) e.currentTarget.style.background = "rgba(37, 211, 102, 0.2)";
+        }}
+        onMouseOut={(e) => {
+          if (contactingId !== poi.id) e.currentTarget.style.background = "rgba(37, 211, 102, 0.1)";
+        }}
+      >
+        {contactingId === poi.id ? (
+          <>
+            <span style={{ display: "inline-block", animation: "spin 1s linear infinite" }}>⏳</span>
+            Conectando...
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: "16px" }}>💬</span>
+            Contactar Propietario
+          </>
+        )}
+      </button>
     </div>
   );
 }
@@ -258,6 +301,8 @@ function GeofenceAlert({ alert, onDismiss }) {
 //  COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════════
 export default function MapView() {
+  const { showToast } = useAppContext(); // <-- AÑADIDO PARA LA NOTIFICACIÓN DE WHATSAPP
+  
   const [pois, setPois] = useState([]);
   const [zones, setZones] = useState([]);
   const [alerts, setAlerts] = useState([]);
@@ -267,6 +312,7 @@ export default function MapView() {
   const [loading, setLoading] = useState(true);
   const [votingId, setVotingId] = useState(null);
   const [voteResult, setVoteResult] = useState({});
+  const [contactingId, setContactingId] = useState(null); // <-- ESTADO DE CARGA DEL BOTÓN
   const mapRef = useRef();
 
   const ZONE_CENTERS = {
@@ -308,6 +354,16 @@ export default function MapView() {
     } finally {
       setVotingId(null);
     }
+  };
+
+  // ── Lógica del botón de WhatsApp ────────────────────────────
+  const handleContact = (poiId, event) => {
+    event.stopPropagation(); // Evita que se cambie el marcador del mapa al hacer clic
+    setContactingId(poiId);
+    setTimeout(() => {
+      setContactingId(null);
+      showToast("Abriendo chat seguro de WhatsApp...", "success");
+    }, 1200);
   };
 
   const dismissAlert = (id) => setAlerts((prev) => prev.filter((a) => a.id !== id));
@@ -506,6 +562,8 @@ export default function MapView() {
                   poi={poi}
                   isSelected={selectedPOI?.id === poi.id}
                   onClick={setSelectedPOI}
+                  onContact={handleContact}       // <-- PASAMOS LA FUNCIÓN DE CONTACTO
+                  contactingId={contactingId}     // <-- PASAMOS EL ID PARA SABER SI ESTÁ CARGANDO
                 />
               ))
           )}

@@ -1,47 +1,87 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { mockApi } from '../services/mockApi';
+import { fetchAllPOIs, voteKarma } from '../services/mockApi';
 
 export default function KarmaView() {
   const { showToast } = useAppContext();
-  const [karmaScore, setKarmaScore] = useState(245);
-  const [isVoting, setIsVoting] = useState(false);
+  const [pois, setPois] = useState([]);
+  const [votingId, setVotingId] = useState(null);
 
-  const handleVote = async (val) => {
-    setIsVoting(true);
-    const result = await mockApi.voteKarma(1, val);
-    setKarmaScore(result.newKarma);
-    setIsVoting(false);
-    showToast(val > 0 ? 'Reseña validada exitosamente' : 'Reporte enviado a moderación', val > 0 ? 'success' : 'error');
+  useEffect(() => {
+    fetchAllPOIs().then(setPois);
+  }, []);
+
+  const handleVote = async (poiId, val) => {
+    setVotingId(poiId);
+    try {
+      const result = await voteKarma(poiId, val);
+      setPois(pois.map(p => p.id === poiId ? { ...p, karma: result.newKarma } : p));
+      showToast('Voto registrado en el algoritmo global', val > 0 ? 'success' : 'info');
+    } finally {
+      setVotingId(null);
+    }
   };
 
   return (
-    <section className="animate-fade-in max-w-3xl">
-      <div className="mb-8">
-        <h2 className="text-3xl font-black text-slate-800 tracking-tight">Algoritmo Karma</h2>
-        <p className="text-slate-500 mt-1 font-medium">Motor de SQA y validación comunitaria.</p>
-      </div>
-
-      <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h3 className="font-black text-2xl text-slate-800">Cuarto en La Cima</h3>
-            <p className="text-xs text-indigo-500 font-bold tracking-wide uppercase mt-1">Imágenes comprimidas en caché</p>
-          </div>
-          <div className={`bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-sm font-black flex items-center gap-2 ${isVoting ? 'animate-pulse' : ''}`}>
-            ⭐ Score: +{karmaScore}
-          </div>
+    <div className="animate-fade-in max-w-4xl mx-auto pb-10">
+      <header className="mb-12 text-center">
+        <div className="inline-block rounded-3xl bg-yellow-400/10 p-4 mb-4">
+          <span className="text-4xl">⭐</span>
         </div>
-        
-        <p className="text-slate-700 text-lg mb-8 italic bg-slate-50 p-6 rounded-2xl border-l-4 border-indigo-500 font-medium">
-          "El lugar es idéntico a las fotos, el internet es de fibra óptica y es muy seguro de noche."
+        <h2 className="text-4xl font-black text-slate-800 tracking-tight">Algoritmo de Karma</h2>
+        <p className="mt-3 text-slate-500 font-medium max-w-lg mx-auto">
+          Tú eres el SQA. Valida la veracidad de los locales para ayudar a otros estudiantes foráneos.
         </p>
-        
-        <div className="flex gap-4">
-          <button onClick={() => handleVote(1)} disabled={isVoting} className="flex-1 bg-slate-100 hover:bg-emerald-100 hover:text-emerald-700 text-slate-700 font-black py-4 rounded-2xl transition-colors disabled:opacity-50">👍 Validar Veracidad</button>
-          <button onClick={() => handleVote(-1)} disabled={isVoting} className="flex-1 bg-slate-100 hover:bg-red-100 hover:text-red-700 text-slate-700 font-black py-4 rounded-2xl transition-colors disabled:opacity-50">👎 Reportar Fraude</button>
-        </div>
+      </header>
+
+      <div className="grid gap-6">
+        {pois.map(poi => (
+          <div key={poi.id} className="group overflow-hidden rounded-[32px] bg-white border border-slate-100 shadow-xl shadow-slate-200/40 p-8 transition-all hover:-translate-y-1">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-2xl font-black text-slate-800">{poi.name}</h3>
+                  <span className={`rounded-xl px-3 py-1 text-[10px] font-black uppercase ${poi.karma >= 80 ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
+                    Score: {poi.karma}
+                  </span>
+                </div>
+                <p className="text-slate-500 font-medium leading-relaxed italic border-l-4 border-indigo-500 pl-4 py-1">
+                  "{poi.description}"
+                </p>
+              </div>
+
+              <div className="flex gap-3 w-full md:w-auto">
+                <button 
+                  onClick={() => handleVote(poi.id, 5)} disabled={votingId === poi.id}
+                  className="flex-1 md:flex-none rounded-2xl bg-emerald-50 p-4 text-sm font-black text-emerald-700 transition-all hover:bg-emerald-600 hover:text-white flex items-center justify-center gap-2"
+                >
+                  <span className="text-lg">👍</span> Validar
+                </button>
+                <button 
+                  onClick={() => handleVote(poi.id, -5)} disabled={votingId === poi.id}
+                  className="flex-1 md:flex-none rounded-2xl bg-red-50 p-4 text-sm font-black text-red-600 transition-all hover:bg-red-600 hover:text-white flex items-center justify-center gap-2"
+                >
+                  <span className="text-lg">👎</span> Reportar
+                </button>
+              </div>
+            </div>
+            
+            {/* Barra de progreso de veracidad */}
+            <div className="mt-8">
+              <div className="flex justify-between text-[10px] font-black uppercase text-slate-400 mb-2">
+                <span>Nivel de Veracidad comunitaria</span>
+                <span>{poi.karma}%</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-1000 ${poi.karma >= 80 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                  style={{ width: `${poi.karma}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
-    </section>
+    </div>
   );
 }

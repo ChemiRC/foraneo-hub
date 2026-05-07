@@ -7,33 +7,65 @@ import Toast from '../components/ui/Toast';
 export default function DashboardLayout() {
   const { user, currentView, navigate, logout } = useAppContext();
 
+  const menuItems = [
+    { id: 'mapa', label: 'Explorar Mapa', icon: '📍' },
+    { id: 'karma', label: 'Comunidad Karma', icon: '⭐' },
+    ...(user.role === 'comercio' ? [{ id: 'negocios', label: 'Terminal de Ventas', icon: '💳' }] : []),
+  ];
+
   return (
-    <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
+    <div className="flex h-screen bg-[#F8FAFC] font-sans">
       <Toast />
-      <aside className="w-[280px] bg-white shadow-2xl flex flex-col z-20">
-        <div className="p-8 border-b border-slate-50">
-          <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl mb-4 shadow-lg shadow-indigo-200">
-            {user.avatar}
+      
+      {/* Sidebar Premium */}
+      <aside className="relative z-30 w-[300px] flex-shrink-0 border-r border-slate-200 bg-white shadow-sm">
+        <div className="flex h-full flex-col p-8">
+          <div className="mb-10 flex items-center gap-4">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl text-xl font-black text-white shadow-lg ${user.role === 'comercio' ? 'bg-emerald-500 shadow-emerald-200' : 'bg-indigo-600 shadow-indigo-200'}`}>
+              {user.avatar}
+            </div>
+            <div>
+              <h2 className="text-sm font-black text-slate-800">{user.name}</h2>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{user.role}</p>
+            </div>
           </div>
-          <p className="font-black text-slate-800 leading-tight">{user.name}</p>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mt-1">{user.id} | {user.role}</p>
-        </div>
-        
-        <nav className="flex-1 p-6 space-y-2">
-          <button onClick={() => navigate('mapa')} className={`w-full text-left px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-3 ${currentView === 'mapa' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}>📍 Mapa Zonal</button>
-          <button onClick={() => navigate('karma')} className={`w-full text-left px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-3 ${currentView === 'karma' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}>⭐ Sistema Karma</button>
-          {user.role === 'comercio' && <button onClick={() => navigate('negocios')} className={`w-full text-left px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-3 ${currentView === 'negocios' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}>💳 Panel Ventas (6%)</button>}
-        </nav>
-        
-        <div className="p-6">
-          <button onClick={logout} className="w-full bg-red-50 text-red-600 font-black py-3 rounded-xl text-xs hover:bg-red-100 transition-colors uppercase tracking-widest">Cerrar Sistema</button>
+
+          <nav className="flex-1 space-y-2">
+            <p className="mb-4 px-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400/60">Menú Principal</p>
+            {menuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => navigate(item.id)}
+                className={`flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-sm font-bold transition-all ${
+                  currentView === item.id 
+                    ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' 
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <span className="text-xl">{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="mt-auto border-t border-slate-100 pt-6">
+            <button 
+              onClick={logout}
+              className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-red-50 py-4 text-xs font-black uppercase tracking-widest text-red-600 transition-all hover:bg-red-600 hover:text-white"
+            >
+              <span>🚪</span> Cerrar Sistema
+            </button>
+          </div>
         </div>
       </aside>
 
-      <main className="flex-1 p-10 overflow-y-auto">
-        {currentView === 'mapa' && <MapView />}
-        {currentView === 'karma' && <KarmaView />}
-        {currentView === 'negocios' && <BusinessPanel />}
+      {/* Área de Contenido */}
+      <main className="relative flex-1 overflow-y-auto px-10 py-10">
+        <div className="mx-auto max-w-6xl h-full">
+          {currentView === 'mapa' && <MapView />}
+          {currentView === 'karma' && <KarmaView />}
+          {currentView === 'negocios' && <BusinessPanel />}
+        </div>
       </main>
     </div>
   );
